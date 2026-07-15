@@ -1,0 +1,32 @@
+server:
+  port: 8081
+
+upload:
+  # Use caminhos absolutos. Ex: C:/uploads/ no Windows ou /var/www/uploads/ no Linux
+  path: "/var/www/uploads/"
+
+spring:
+  application:
+    name: Biblioteca
+  datasource:
+    url: jdbc:postgresql://localhost:5433/biblioteca
+    username: admin
+    password: admin123
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 2MB
+  devtools:
+    restart:
+      enabled: true
+    livereload:
+      enabled: true

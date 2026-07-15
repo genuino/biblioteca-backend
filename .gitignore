@@ -1,0 +1,8 @@
+target/
+.mvn/
+.idea/
+*.iml
+.settings/
+.classpath
+.project
+application-local.properties
