@@ -48,10 +48,7 @@ O backend estará disponível em `http://localhost:8081` (ajuste conforme a conf
 
 ### 3. Frontend
 
-Link:
-
-```https://github.com/genuino/biblioteca-frontend
-```
+Link: `https://github.com/genuino/biblioteca-frontend`
 
 ## Estrutura do projeto
 
