@@ -12,7 +12,7 @@ Sistema de gerenciamento de biblioteca, com frontend em React/TypeScript (Materi
 ## Pré-requisitos
 
 - [Docker](https://www.docker.com/) instalado e em execução (necessário para subir o banco de dados PostgreSQL)
-- [Java JDK](https://adoptium.net/) (17 ou superior)
+- [Java JDK](https://adoptium.net/) (21 ou superior)
 - [Maven](https://maven.apache.org/) instalado (ou utilize o Maven Wrapper `./mvnw` incluído no projeto, se disponível)
 - [Node.js](https://nodejs.org/) e npm/yarn (para rodar o frontend)
 
