@@ -46,16 +46,12 @@ Ou, se o projeto utilizar o Maven Wrapper:
 
 O backend estará disponível em `http://localhost:8081` (ajuste conforme a configuração da aplicação).
 
-### 3. Executar o frontend
+### 3. Frontend
 
-Dentro da pasta do frontend, execute:
+Link:
 
-```bash
-npm install
-npm run dev
+```https://github.com/genuino/biblioteca-frontend
 ```
-
-O frontend estará disponível em `http://localhost:3000` (ou na porta indicada no terminal, caso esteja usando Vite).
 
 ## Estrutura do projeto
 
