@@ -45,7 +45,7 @@ Após a primeira execução do Spring-Boot:
 
 a) no arquivo application.yml alterar a linha 18 - ddl-auto: create para ddl-auto: none.
 
-Comentar na classe BibliotecaApplication nas linhas 19(CategoriaService categoriaService = context.getBean(CategoriaService.class);) até a linha 137(categoriaService.salvar(categoria);). Foi necessário para carregar as categorias pré-definidas. 
+b) Comentar na classe BibliotecaApplication nas linhas 19(CategoriaService categoriaService = context.getBean(CategoriaService.class);) até a linha 137(categoriaService.salvar(categoria);). Isso foi necessário para carregar as categorias pré-definidas. 
 
 ### 4. Frontend
 
