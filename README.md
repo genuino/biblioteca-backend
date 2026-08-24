@@ -4,8 +4,8 @@ Sistema de gerenciamento de biblioteca, com frontend em React/TypeScript (Materi
 
 ## Tecnologias
 
-- **Frontend:** React, TypeScript, Material UI
-- **Backend:** Java, Spring Boot, JPA/Hibernate
+- **Frontend:** React, TypeScript, Material UI, REST
+- **Backend:** Java, Spring Boot, JPA/Hibernate, REST
 - **Banco de dados:** PostgreSQL
 - **Build/Execução do backend:** Maven
 
