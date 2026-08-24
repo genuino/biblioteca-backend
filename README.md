@@ -13,7 +13,7 @@ Sistema de gerenciamento de biblioteca, com frontend em React/TypeScript (Materi
 
 - [Docker](https://www.docker.com/) instalado e em execução (necessário para subir o banco de dados PostgreSQL)
 - [Java JDK](https://adoptium.net/) (21 ou superior)
-- [Maven](https://maven.apache.org/) instalado (ou utilize o Maven Wrapper `./mvnw` incluído no projeto, se disponível)
+- [Maven](https://maven.apache.org/) 
 - [Node.js](https://nodejs.org/) e npm/yarn (para rodar o frontend)
 
 ## Como executar
@@ -28,7 +28,14 @@ docker-compose up -d
 
 Isso irá subir o container do PostgreSQL necessário para o backend.
 
-### 2. Executar o backend via Maven
+### 2. Configurações 
+
+Depois da primeira execução do Spring-Boot no arquivo application.yml alterar a linha 18 - ddl-auto: update para ddl-auto: none.
+
+Comentar na classe BibliotecaApplication nas linhas 19(CategoriaService categoriaService = context.getBean(CategoriaService.class);) até a linha 137(categoriaService.salvar(categoria);). Após a primeira execução do Spring-Boot voltar os comentários. Isso é necessário para carregar as categorias pré-definidas. 
+
+
+### 3. Executar o backend via Maven
 
 Dentro da pasta do backend, execute:
 
@@ -37,16 +44,9 @@ mvn clean install
 mvn spring-boot:run
 ```
 
-Ou, se o projeto utilizar o Maven Wrapper:
-
-```bash
-./mvnw clean install
-./mvnw spring-boot:run
-```
-
 O backend estará disponível em `http://localhost:8081` (ajuste conforme a configuração da aplicação).
 
-### 3. Frontend
+### 4. Frontend
 
 Link: https://github.com/genuino/biblioteca-frontend
 
