@@ -1,7 +1,9 @@
 package br.com.biblioteca.repository;
 
 import java.time.LocalDate;
+import java.util.List;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -27,4 +29,15 @@ public interface PenalizacaoRepository extends JpaRepository<Penalizacao, Intege
 		    @Param("idCliente") Integer idCliente,
 		    @Param("idFuncionario") Integer idFuncionario,
 		    @Param("dataLimite") LocalDate dataLimite);
+
+	@Query("SELECT p "
+		+ "FROM Penalizacao p WHERE p.dataFinal >= CURRENT_DATE "
+		+ "AND p.idEscola = ?1")
+	List<Penalizacao> buscarPenalizacoes(Integer idEscola, Pageable pageable);
+
+	@Query("SELECT DISTINCT p "
+		+ "FROM Penalizacao p WHERE p.dataFinal >= CURRENT_DATE "
+		+ "AND p.idEscola = ?1 AND (p.idAluno = ?2 OR element(p.livros).id IN (?3))")
+	List<Penalizacao> buscarPenalizacoesCampos(Integer idEscola, Integer idAluno, List<Integer> idLivros);
+
 }

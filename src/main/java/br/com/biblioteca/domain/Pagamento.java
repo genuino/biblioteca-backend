@@ -2,13 +2,20 @@ package br.com.biblioteca.domain;
 
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -45,6 +52,15 @@ public class Pagamento implements Serializable {
     @ManyToOne
     @JoinColumn(name = "id_livro_venda")
     private LivroVenda livroVenda;
+
+    @JsonManagedReference
+    @ManyToMany(cascade = {CascadeType.MERGE, CascadeType.REFRESH})
+    @JoinTable(
+        name = "tbl_livro_multa", 
+        joinColumns = @JoinColumn(name = "id_livro"),
+        inverseJoinColumns = @JoinColumn(name = "id_multa")
+    )
+    private Set<Livro> livros = new HashSet<>();
     
     //@Column(name = "ativa_penalizacao_acumulada")
     //boolean ativaPenalizacaoAcumulada;
@@ -54,4 +70,8 @@ public class Pagamento implements Serializable {
     private Integer idFuncionario;
     
     private Integer idEscola;
+    
+    private Integer cobrarJuros;
+    
+    private Integer idFuncionarioAuditria;
 }

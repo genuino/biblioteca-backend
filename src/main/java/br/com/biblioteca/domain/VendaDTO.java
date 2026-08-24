@@ -21,7 +21,7 @@ public class VendaDTO {
     
     private LocalDate dataEntrega;
     
-    private Cliente cliente;
+    private ClienteDTO cliente;
     
     private Set<LivroDTO> livros = new HashSet<>();
     

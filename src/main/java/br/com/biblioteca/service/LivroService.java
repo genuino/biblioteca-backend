@@ -11,12 +11,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import br.com.biblioteca.domain.ImagemLivro;
 import br.com.biblioteca.domain.Livro;
 import br.com.biblioteca.exception.ConflictException;
 import br.com.biblioteca.exception.NotFoundException;
+import br.com.biblioteca.repository.ImagemRepository;
 import br.com.biblioteca.repository.LivroRepository;
 import br.com.biblioteca.util.Constantes;
 import br.com.biblioteca.util.Util;
+import jakarta.transaction.Transactional;
 
 @Service
 public class LivroService {
@@ -33,23 +36,37 @@ public class LivroService {
 	PenalizacaoService penalizacaoService;
 
 	@Autowired
-	MultaService multaService;
+	PagamentoService multaService;
+	
+	@Autowired
+	ImagemRepository imagemRepository;
 	
     @Value("${upload.path}")
     private String uploadPath;
     
+    @Transactional
 	public Livro salvarLivro(Livro livro) {
-		
-		try {
-			
-			livro.setId(livroRepository.findMaxId() + 1);
+    	
+    	try {
+    	
+    		logger.info("Id do livro: {}", livro.getId());
+    		logger.info("ISBN do livro: {}", livro.getIsbn());
+    		
+    		if(livro.getId() != null && livro.getId() > 0) {
+				
+				imagemRepository.deleteAllImagesLivro(livro.getId());
+			}
 			
 			logger.info("Id do livro: {}", livro.getId());
 			System.out.println("Id do livro: " + livro.getId());
 			
-			String caminhoImagem = Util.salvarImagem(livro.getImagem(), 
-					uploadPath, Constantes.LIVRO.concat(livro.getId().toString()));
-			livro.setImagem(caminhoImagem);
+			for(ImagemLivro imagemLivro: livro.getImagens()) {
+				
+				imagemLivro.setId(imagemRepository.getNextImagemId() + 1);
+				String caminhoImagem = Util.salvarImagem(imagemLivro.getCaminho(), 
+						uploadPath, Constantes.LIVRO.concat(imagemLivro.getId().toString()));
+				imagemLivro.setCaminho(caminhoImagem);
+			}
 			
 			Livro livroRet = livroRepository.save(livro);
 			

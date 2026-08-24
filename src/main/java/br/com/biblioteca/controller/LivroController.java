@@ -21,12 +21,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.biblioteca.domain.Autor;
+import br.com.biblioteca.domain.AutorDTO;
 import br.com.biblioteca.domain.Livro;
 import br.com.biblioteca.domain.LivroDTO;
 import br.com.biblioteca.service.AutorService;
 import br.com.biblioteca.service.CategoriaService;
 import br.com.biblioteca.service.LivroService;
-import br.com.biblioteca.service.MultaService;
+import br.com.biblioteca.service.PagamentoService;
 import br.com.biblioteca.service.PenalizacaoService;
 import br.com.biblioteca.service.ReservaService;
 import br.com.biblioteca.service.VendaService;
@@ -54,7 +55,7 @@ public class LivroController {
 	PenalizacaoService penalizacaoService;
 
 	@Autowired
-	MultaService multaService;
+	PagamentoService multaService;
 	
 	@Autowired
 	VendaService vendaService;
@@ -64,22 +65,28 @@ public class LivroController {
     
     @Transactional(rollbackFor = Exception.class)
 	@PostMapping
-	public ResponseEntity<Object> salvarLivro(@RequestBody Livro livro, @RequestParam boolean comRestricao) {
+	public ResponseEntity<Object> salvarLivro(@RequestBody LivroDTO livroDTO, @RequestParam boolean comRestricao) {
 		
 		System.out.println("============================================================================================");
 		//System.out.println("Livro autor: " + (livro.getAutores() == null ? "autores vazio" : livro.getAutores().toString()));
-		System.out.println("Livro id: " + livro.getId());
+		System.out.println("Livro id: " + livroDTO.getId());
+		System.out.println("Imagens do livroDTO: " + livroDTO.getImagens());
 		System.out.println("============================================================================================");
-				
+			
+		Livro livro = Util.toEntity(livroDTO);
+		
+		System.out.println("Imagens do livro: " + livro.getImagens());
+		System.out.println("============================================================================================");
+		
 		Map<String, Object> response = new HashMap<>();
 		
 		Set<Autor> autoresBD = new HashSet<>();
 		
 		List<String> autores = new ArrayList<>();
 
-		for (Iterator<Autor> iterator = livro.getAutores().iterator(); iterator.hasNext();) {
+		for (Iterator<AutorDTO> iterator = livroDTO.getAutores().iterator(); iterator.hasNext();) {
 			
-			Autor autorLivro =  iterator.next();
+			AutorDTO autorLivro =  iterator.next();
 			
 			autores.add(autorLivro.getNome());
 			
@@ -98,10 +105,9 @@ public class LivroController {
 				
 				//autorLivro.getLivros().add(livro);
 				autorLivro.setId(null);
-				autoresBD.add(autorService.criar(autorLivro));
+				autoresBD.add(autorService.criar(Util.autorToEntity(autorLivro)));
 			}
 		}
-		livro.getAutores().clear();
 		livro.setAutores(autoresBD);
 		
 		if(comRestricao) {
@@ -114,7 +120,7 @@ public class LivroController {
 				
 				while(!autores.isEmpty()) {
 					
-					autoresResp = autores.remove(0).concat(",");
+					autoresResp = autoresResp.concat(autores.remove(0)).concat(",");
 				}
 				
 				autoresResp = autoresResp.substring(0, autoresResp.length() - 1);
@@ -182,7 +188,14 @@ public class LivroController {
 		for (Livro livroObj : livros) {
 			
 			new Util(categoriaService);
-			LivroDTO livroDTO = Util.formatarLivroParaLivroDTO(livroObj);
+			LivroDTO livroDTO = Util.formatarLivroParaLivroDTO(livroObj, true);
+
+			if(livroDTO.getImagens() != null && livroDTO.getImagens().size() > 0) {
+				
+				System.out.println("=========================================");
+				System.out.println("Imagem de livros: " + livroDTO.getImagens().get(0).getImagem());
+				System.out.println("=========================================");
+			}
 			
 			livrosDTO.add(livroDTO);
 		}
@@ -211,7 +224,7 @@ public class LivroController {
 		dados.put("livro", livroObj.getTitulo());
 		dados.put("editora", livroObj.getEditora());
 		dados.put("edicao", livroObj.getEdicao());
-		dados.put("imagem", livroObj.getImagem());
+		dados.put("imagem", livroObj.getImagens());
 		
 		if(livroObj.getCategoria() != null) {
 		

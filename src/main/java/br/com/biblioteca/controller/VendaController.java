@@ -31,7 +31,7 @@ import br.com.biblioteca.domain.Venda;
 import br.com.biblioteca.domain.VendaDTO;
 import br.com.biblioteca.service.CategoriaService;
 import br.com.biblioteca.service.ConfiguracaoService;
-import br.com.biblioteca.service.MultaService;
+import br.com.biblioteca.service.PagamentoService;
 import br.com.biblioteca.service.PenalizacaoService;
 import br.com.biblioteca.service.ReservaService;
 import br.com.biblioteca.service.VendaService;
@@ -45,7 +45,7 @@ public class VendaController {
 	private static final Logger logger = LogManager.getLogger(VendaController.class);
 	
 	@Autowired
-	MultaService multaService;
+	PagamentoService multaService;
 	
 	@Autowired
 	PenalizacaoService penalizacaoService;
@@ -226,7 +226,7 @@ public class VendaController {
 				    .forEach(livroVenda -> {
 				        
 				    	new Util(categoriaService);
-		            	LivroDTO livroDto = Util.formatarLivroParaLivroDTO(livroVenda.getLivro());
+		            	LivroDTO livroDto = Util.formatarLivroParaLivroDTO(livroVenda.getLivro(), true);
 				    	
 		            	Set<LivroDTO> livrosDTO = new HashSet<>();
 		            	if(vendasDTO.get(livroVenda.getId()) != null) {
@@ -238,7 +238,8 @@ public class VendaController {
 		            	
 				    	VendaDTO dto = new VendaDTO(livroVenda.getVenda().getId(), 
 				    			livroVenda.getVenda().getValor(), livroVenda.getVenda().getData(), 
-				    			livroVenda.getDataEntrega(), livroVenda.getVenda().getCliente(),
+				    			livroVenda.getDataEntrega(), 
+				    			Util.toDTO(livroVenda.getVenda().getCliente()),
 				        		livrosDTO, livroVenda.getVenda().getCopia(), livroVenda.getVenda().getEmprestimo(), 
 				        		livroVenda.getVenda().getIdAluno(), livroVenda.getVenda().getIdFuncionario());
 				        
@@ -277,7 +278,7 @@ public class VendaController {
 		      
 		      if(atraso > 0) {
 		    	  
-		    	  if(config.getCobrarAtraso()) {
+		    	  if(config.getQtosDiasPenalizacao() > 0) {
 		    		  
 		    		  retorno = "\nAtrasado ".concat(
 		    				  Long.toString(atraso)).concat(" dia(s).");
@@ -313,4 +314,33 @@ public class VendaController {
 			  return ResponseEntity.badRequest().body(ex.getMessage());
 		  }
 	  }
+
+	  @PatchMapping("renovar/{idEmprestimo}")
+	  public ResponseEntity<String> renovarLivro(
+	          @PathVariable Integer idEmprestimo) {
+		  
+		  logger.info("Entrou na renovação de livro");
+
+	      LivroVenda livroVenda = vendaService.findByLivroVenda(idEmprestimo);		  
+		  
+		  devolverLivro(idEmprestimo);
+		  
+		  try {
+			  
+		      LocalDate data = LocalDate.now();
+		      livroVenda.getVenda().setData(data);
+		      livroVenda.setId(null);
+		      livroVenda.getVenda().setId(null);
+		      List<LivroDTO> livros = new ArrayList<>();
+		      livros.add(Util.formatarLivroParaLivroDTO(livroVenda.getLivro(), false));
+		      
+		      return this.emprestimo(Util.toDTO(livroVenda.getVenda(), livroVenda, livros));
+		      
+		  } catch(Exception ex) {
+			  
+			  ex.printStackTrace();
+			  return ResponseEntity.badRequest().body(ex.getMessage());
+		  }
+	  }
+
 }

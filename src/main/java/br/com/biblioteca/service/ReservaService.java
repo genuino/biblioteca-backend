@@ -14,6 +14,7 @@ import br.com.biblioteca.domain.Reserva;
 import br.com.biblioteca.repository.ConfiguracaoRepository;
 import br.com.biblioteca.repository.LivroReservaRepository;
 import br.com.biblioteca.repository.ReservaRepository;
+import jakarta.transaction.Transactional;
 
 @Service
 public class ReservaService {
@@ -79,11 +80,15 @@ public class ReservaService {
 		return reservasDisponiveis == null ? 0: reservasDisponiveis;
 	}
 	
-	public Reserva salvarReserva(Reserva reserva) {
+	@Transactional
+	public Reserva salvarReserva(List<LivroReserva> livrosReserva) {
 		
-		Reserva reservaRet = reservaRepository.save(reserva);
+		Reserva reservaBD = reservaRepository.save(livrosReserva.get(0).getReserva());
 		
-		return reservaRet;
+		livrosReserva.forEach(lr -> lr.setReserva(reservaBD));
+		livrosReserva = livroReservaRepository.saveAll(livrosReserva);
+		
+		return reservaBD;
 	}
 	
 	public List<LivroReserva> pesquisarLivrosMatriculaReserva(List<Integer> nomes, List<Integer> ids) {
@@ -123,5 +128,33 @@ public class ReservaService {
 				dataInicial, dataFinal);
 		
 		return livroReservaRet;
+	}
+	
+	@Transactional
+	public void deletarReserva(Integer id) throws Exception {
+		
+		Optional<LivroReserva> livroReserva = 
+				livroReservaRepository.findById(id);
+		
+		if(livroReserva.isPresent()) {
+			
+			livroReservaRepository.delete(livroReserva.get());
+			
+			Reserva reserva = reservaRepository.findById(livroReserva.get().getReserva().getId()).get();
+			reservaRepository.delete(reserva);
+		}
+	}
+
+	@Transactional
+	public void renovarReserva(Integer id) throws Exception {
+		
+		LivroReserva livroReserva = 
+				livroReservaRepository.getReferenceById(id);
+		livroReserva.setDataFinal(LocalDate.now().plusDays(3));
+		livroReservaRepository.save(livroReserva);
+		
+		Reserva reserva = reservaRepository.getReferenceById(livroReserva.getReserva().getId());
+		reserva.setDataInicial(LocalDate.now());
+		reservaRepository.save(reserva);
 	}
 }

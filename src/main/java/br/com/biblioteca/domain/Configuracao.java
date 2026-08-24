@@ -60,8 +60,8 @@ public class Configuracao implements Serializable {
 	@Column(name = "periodo_penalizacao")
 	private Integer periodoPenalizacao;
 	
-	@Column(name = "cobrar_atraso")
-	private Boolean cobrarAtraso;
+	//@Column(name = "cobrar_atraso")
+	//private Boolean cobrarAtraso;
 	
 	@Column(name = "id_escola")
 	private Integer idEscola;

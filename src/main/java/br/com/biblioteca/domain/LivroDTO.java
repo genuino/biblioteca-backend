@@ -1,5 +1,6 @@
 package br.com.biblioteca.domain;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,12 +15,15 @@ import lombok.Setter;
 @Setter
 public class LivroDTO {
 
-	int id;
+	Integer id;
 	String titulo;
 	String edicao;
 	String editora;
 	String descricao;
-	String imagem;
+	String isbn;
+	String localizacao;
+	LocalDate publicacao;
+	List<ImagemLivroDTO> imagens;
 	CategoriaDTO categoria;
 	String msg;
 	int copia;

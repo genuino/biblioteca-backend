@@ -6,12 +6,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,13 +23,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import br.com.biblioteca.domain.Configuracao;
 import br.com.biblioteca.domain.LivroDTO;
 import br.com.biblioteca.domain.LivroReserva;
 import br.com.biblioteca.domain.Reserva;
 import br.com.biblioteca.domain.ReservaDTO;
 import br.com.biblioteca.service.CategoriaService;
 import br.com.biblioteca.service.ConfiguracaoService;
-import br.com.biblioteca.service.MultaService;
+import br.com.biblioteca.service.PagamentoService;
 import br.com.biblioteca.service.PenalizacaoService;
 import br.com.biblioteca.service.ReservaService;
 import br.com.biblioteca.service.VendaService;
@@ -43,7 +48,7 @@ public class ReservaController {
 	PenalizacaoService penalizacaoService;
 
 	@Autowired
-	MultaService multaService;
+	PagamentoService multaService;
 
 	@Autowired
 	CategoriaService categoriaService;
@@ -55,6 +60,8 @@ public class ReservaController {
 	ConfiguracaoService configuracaoService;
 
 	DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+	private static final Logger logger = LogManager.getLogger(AutorController.class);
 	
 	@PostMapping
 	public ResponseEntity<String> salvarReserva(@RequestBody ReservaDTO reservaDTO) {
@@ -63,32 +70,32 @@ public class ReservaController {
 		String retornoSucesso = "";
 		
 		//Verifica reservas do usuário
-		/*List<Reserva> reservas = reservaService.pesquisarLivrosMatriculaReserva(List.of(reserva.getMatricula()),
+		List<LivroReserva> reservas = reservaService.pesquisarLivrosMatriculaReserva(List.of(reservaDTO.getIdAluno()),
 				null);
 		
 		Configuracao configuracao = configuracaoService.buscarConfiguracao();
 		
-		if(configuracao.getQtasReservas() < reservas.size()) {
+		if(configuracao.getQtasReservas() <= reservas.size()) {
 			
 			retornoErro = "Usário com limites de reservas";
-		}*/
-		
-		ReservaDTO reservaDTOBD = reservaDTO;
-		if(reservaDTOBD.getLivros() != null) {
 			
-			reservaDTOBD.getLivros().clear();
+			return ResponseEntity.badRequest().body(retornoErro);
 		}
 		
+		Reserva reservaRet = Util.toEntity(reservaDTO);
+		List<LivroReserva> livrosReserva = new ArrayList<>();
 		for (LivroDTO livroDTO : reservaDTO.getLivros()) {
+			
+			boolean adicionarLivrosReserva = true;
 			
 			String periodo = reservaService.livroReservado(livroDTO.getId(), reservaDTO.getIdAluno());
 			
-			if(periodo.isBlank()) {
+			if(!periodo.isBlank()) {
 				
-				retornoErro = retornoErro.concat("Usuário já tem reserva para o livro"
+				retornoErro = retornoErro.concat("Usuário já tem reserva para o livro "
 						.concat(livroDTO.getTitulo()).concat(" na(s) data(s) de ").concat(periodo).concat(".\n"));
-					
-				continue;
+				
+				adicionarLivrosReserva = false;
 			}
 			
 			System.out.println("======================================");
@@ -103,7 +110,7 @@ public class ReservaController {
 					Util.formatStringtoLocalDate(reservaDTO.getDataInicial()), 
 					Util.formatStringtoLocalDate(reservaDTO.getDataFinal()));
 			
-			if(livrosDispon <= 0) {
+			if(livrosDispon > 0) {
 				
 				String retornoData = reservaDTO.getDataInicial();
 				
@@ -116,7 +123,7 @@ public class ReservaController {
 				retornoErro = retornoErro.concat("Reserva indisponível para o livro"
 					.concat(livroDTO.getTitulo()).concat(" na(s) data(s) de ").concat(retornoData).concat(".\n"));
 				
-				continue;
+				adicionarLivrosReserva = false;
 			} 
 			
 			//Verifica se o cliente não ultrapassou os limites de reservas
@@ -135,7 +142,8 @@ public class ReservaController {
 						retornoErro = retornoErro.concat("Reserva esgotada para o livro ".concat(livroDTO.getTitulo()).
 							concat(". Cancele uma ou mais para realizar novas reservas.").concat("\n"));
 						
-						continue;
+						adicionarLivrosReserva = false;
+						
 					} else {
 						
 						quantasReservasInt = Integer.parseInt(Character.toString(quantasReservasArray[i]));
@@ -145,7 +153,7 @@ public class ReservaController {
 							retornoErro = retornoErro.concat("Disponível ".concat(Integer.toString(quantasReservasInt))
 									.concat(" reserva(s) para o livro ").concat(livroDTO.getTitulo()).concat(".\n"));
 							
-							continue;
+							adicionarLivrosReserva = false;
 						}
 					}
 					
@@ -154,6 +162,7 @@ public class ReservaController {
 					if(quantasReservasArray[i] == '-') {
 						
 						retornoErro = retornoErro.concat("Reserva esgotada para o mesmo livro: ".concat(livroDTO.getTitulo()).concat(".\n"));
+						adicionarLivrosReserva = false;
 					} else {
 						
 						quantasReservasMesmoLivro = Integer.parseInt(Character.toString(quantasReservasArray[i]));
@@ -162,45 +171,53 @@ public class ReservaController {
 							
 							retornoErro = retornoErro.concat("Disponível ".concat(Integer.toString(quantasReservasMesmoLivro))
 									.concat(" reserva(s) para o livro ").concat(livroDTO.getTitulo()).concat(".\n"));
+							adicionarLivrosReserva = false;
 						}
 					}
 					
 				}
 				
-				if(retornoErro.isEmpty()) {
+				if(adicionarLivrosReserva) {
 					
-					reservaDTOBD.getLivros().add(livroDTO);
+					LivroReserva livroReserva = new LivroReserva();
+					livroReserva.setLivro(Util.toEntity(livroDTO));
+					livroReserva.setReserva(reservaRet);
+					livroReserva.setDataFinal(
+							reservaDTO.getDataFinal() != null
+		                    ? Util.formatStringtoLocalDate(reservaDTO.getDataFinal())
+		                    : null);
+					livrosReserva.add(livroReserva);
 					
+					retornoSucesso = retornoSucesso.concat("Reserva para o livro ".concat(livroDTO.getTitulo()).concat(" feita com sucesso!\n"));
 				}
 				
 			}
 				
 		}
 		
-		Reserva reservaRet = reservaService.salvarReserva(Util.toEntity(reservaDTOBD));
-		
-		if(reservaRet != null) {
+		if(!livrosReserva.isEmpty()) {
 			
-			for(LivroDTO livroDTO : reservaDTOBD.getLivros()) {
-				
-				retornoSucesso = retornoSucesso.concat("Reserva para o livro ".concat(livroDTO.getTitulo()).concat(" feita com sucesso!\n"));
-			}
-		} else {
+			reservaRet = reservaService.salvarReserva(livrosReserva);
 			
-			for(LivroDTO livroDTO : reservaDTOBD.getLivros()) {
+			if(reservaRet == null) {
 				
-				retornoErro = retornoErro.concat("Reserva para o livro ".concat(livroDTO.getTitulo()).concat(" não realizada.\n"));
+				return ResponseEntity.badRequest().body("Não foi possível cadastrar a reserva. Tente novamente.");
+			
 			}
 		}
 		
-		
 		return retornoErro.isBlank() ? ResponseEntity.ok(retornoSucesso) : 
-			ResponseEntity.ofNullable(retornoSucesso.concat(retornoErro));
+			ResponseEntity.badRequest().body(retornoSucesso.concat(retornoErro));
 	}
 	
 	@GetMapping("/pesquisar_reserva/{paginas}")
     public ResponseEntity<List<ReservaDTO>> buscarTodasReservas(@PathVariable int paginas) throws Exception {
-
+		
+		logger.info("Entrou no buscarTodasReservas");
+		System.out.println("===========================================");
+		System.out.println("Entrou no buscarTodasReservas");
+		System.out.println("===========================================");
+		
 		List<ReservaDTO> dados = new ArrayList<>();
 		
 		Pageable pageable = PageRequest.of(paginas - 1000, paginas);
@@ -255,9 +272,13 @@ public class ReservaController {
 			if(reservaDTO == null) {
 				
 				reservaDTO = Util.toDTO(livroReserva.getReserva());
+				reservaDTO.setId(livroReserva.getId());
 			}
 			
-			LivroDTO livroDTO = Util.formatarLivroParaLivroDTO(livroReserva.getLivro());
+			reservaDTO.setDataFinal(Util.formatLocalDatetoString(livroReserva.getDataFinal()));
+			
+			Util util = new Util(categoriaService);
+			LivroDTO livroDTO = util.formatarLivroParaLivroDTO(livroReserva.getLivro(), true);
 			reservaDTO.getLivros().add(livroDTO);
 			
 			dados.add(reservaDTO);
@@ -265,5 +286,36 @@ public class ReservaController {
 		
 		return dados;
 	}
+	
+	@PatchMapping("renovar/{id}")
+	public ResponseEntity<String> atualizarParcial(
+	        @PathVariable Integer id) {
+		
+		try {
+		
+			reservaService.renovarReserva(id);
+			return ResponseEntity.ok("Reserva renovada com sucesso!");
+		} catch(Exception ex) {
+			
+			return ResponseEntity.badRequest().body("Reserva não renovada. ".concat(ex.getMessage()));
+		}
+	}
+	
+	@DeleteMapping("/{id}")
+    public ResponseEntity<String> deletar(@PathVariable Integer id) {
+        
+		System.out.println("============ENTROOOOOOOOOOOOOOUuuuuuuuuuuuuuuuuuuuuu======");
+		try {
+		
+			reservaService.deletarReserva(id);
+			return ResponseEntity.ok()
+	                .body("Exclusão realizada com sucesso!");
+		} catch(Exception ex) {
+			
+			ex.printStackTrace();
+			return ResponseEntity.badRequest()
+	                .body("Exclusão não realizada. ".concat(ex.getMessage()));
+		}
+    }
 	
 }

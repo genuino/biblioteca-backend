@@ -35,9 +35,15 @@ import br.com.biblioteca.domain.Categoria;
 import br.com.biblioteca.domain.CategoriaDTO;
 import br.com.biblioteca.domain.Cliente;
 import br.com.biblioteca.domain.ClienteDTO;
+import br.com.biblioteca.domain.ImagemLivro;
+import br.com.biblioteca.domain.ImagemLivroDTO;
 import br.com.biblioteca.domain.Livro;
 import br.com.biblioteca.domain.LivroDTO;
+import br.com.biblioteca.domain.LivroReserva;
 import br.com.biblioteca.domain.LivroVenda;
+import br.com.biblioteca.domain.Pagamento;
+import br.com.biblioteca.domain.Penalizacao;
+import br.com.biblioteca.domain.PenalizacaoDTO;
 import br.com.biblioteca.domain.Reserva;
 import br.com.biblioteca.domain.ReservaDTO;
 import br.com.biblioteca.domain.Venda;
@@ -153,7 +159,7 @@ public class Util {
 	    return nomeArquivo;
 	}
 	
-	public  static LivroDTO formatarLivroParaLivroDTO(Livro livro) {
+	public static LivroDTO formatarLivroParaLivroDTO(Livro livro, boolean apenasPrimeiraIamgem) {
 		
 		LivroDTO livroDTO = new LivroDTO();
 		
@@ -163,8 +169,22 @@ public class Util {
 		livroDTO.setEdicao(livro.getEdicao());
 		livroDTO.setEditora(livro.getEditora());
 		livroDTO.setId(livro.getId());
-		livroDTO.setImagem(livro.getImagem());
 		livroDTO.setTitulo(livro.getTitulo());
+		livroDTO.setIsbn(livro.getIsbn());
+		livroDTO.setPublicacao(livro.getPublicacao());
+		livroDTO.setLocalizacao(livro.getLocalizacao());
+		
+		List<ImagemLivroDTO> imagensLivroDTO = new ArrayList<>();
+		for( ImagemLivro imagemLivro : livro.getImagens()) {
+			
+			ImagemLivroDTO imagemLivroDTO = new ImagemLivroDTO();
+			imagemLivroDTO.setImagem(imagemLivro.getCaminho());
+			imagemLivroDTO.setPosicao(imagemLivro.getPosicao());
+			imagensLivroDTO.add(imagemLivroDTO);
+			
+			if(apenasPrimeiraIamgem) break;
+		}
+		livroDTO.setImagens(imagensLivroDTO);
 		
 		List<AutorDTO> autoresDTO = new ArrayList<>();
 		for(Autor autor: livro.getAutores()) {
@@ -186,9 +206,24 @@ public class Util {
         livro.setEdicao(dto.getEdicao());
         livro.setEditora(dto.getEditora());
         livro.setDescricao(dto.getDescricao());
-        livro.setImagem(dto.getImagem());
         livro.setCopia(dto.getCopia());
-
+        livro.setIsbn(dto.getIsbn());
+        livro.setPublicacao(dto.getPublicacao());
+        livro.setLocalizacao(dto.getLocalizacao());
+        
+        if(dto.getImagens() != null) {
+			List<ImagemLivro> imagensLivro = new ArrayList<>();
+			for( ImagemLivroDTO imagemDTO : dto.getImagens()) {
+				
+				ImagemLivro imagemLivro = new ImagemLivro();
+				imagemLivro.setCaminho(imagemDTO.getImagem());
+				imagemLivro.setLivro(livro);
+				imagemLivro.setPosicao(imagemDTO.getPosicao());
+				imagensLivro.add(imagemLivro);
+			}
+			livro.setImagens(imagensLivro);
+        }
+		
         if (dto.getCategoria() != null) {
             livro.setCategoria(categoriaToEntity(dto.getCategoria()));
         }
@@ -204,7 +239,7 @@ public class Util {
         return livro;
     }
 	
-	public  static AutorDTO formatarAutorParaAutorDTO(Autor autor) {
+	public static AutorDTO formatarAutorParaAutorDTO(Autor autor) {
 		
 		AutorDTO autorDTO = new AutorDTO();
 		
@@ -214,7 +249,7 @@ public class Util {
 		return autorDTO;
 	}
 
-	private static Autor autorToEntity(AutorDTO dto) {
+	public static Autor autorToEntity(AutorDTO dto) {
         if (dto == null) return null;
 
         Autor autor = new Autor();
@@ -231,13 +266,16 @@ public class Util {
 		categoriaDTO.setId(categoria.getId());
 		categoriaDTO.setCategoria(categoria.getCategoria());	
 		
-		categoriaService.setCaminhoTodaCategoria(categoria.getCategoria());
-		categoriaService.buscarCategoriasTodosPai(categoria.getIdCategoriaPai());
-		categoriaDTO.setCaminhoCategoria(categoriaService.getCaminhoTodaCategoria());
-		//categoriaService.setCaminhoTodaCategoria(null);
+		if(categoriaService != null) {
+	
+			categoriaService.setCaminhoTodaCategoria(categoria.getCategoria());
+			categoriaService.buscarCategoriasTodosPai(categoria.getIdCategoriaPai());
+			categoriaDTO.setCaminhoCategoria(categoriaService.getCaminhoTodaCategoria());
+			//categoriaService.setCaminhoTodaCategoria(null);
 
-		logger.info("Caminho da categoria: " + categoriaDTO.getCaminhoCategoria());
-		
+			logger.info("Caminho da categoria: " + categoriaDTO.getCaminhoCategoria());
+		}
+			
 		return categoriaDTO;
 	}
 
@@ -255,7 +293,7 @@ public class Util {
       if (dto == null) return null;
 
         Reserva reserva = new Reserva();
-        reserva.setId(dto.getId());
+        reserva.setId(dto.getId() > 0 ? dto.getId() : null);
         reserva.setDataInicial(
             dto.getDataInicial() != null
                 ? formatStringtoLocalDate(dto.getDataInicial())
@@ -267,7 +305,7 @@ public class Util {
         // Relacionamentos — precisam ser resolvidos via repositório no service
         // reserva.setCliente(...)
         // reserva.setLivros(...)
-
+        
         return reserva;
     }
 
@@ -300,7 +338,34 @@ public class Util {
 
 	        return dto;
 	  }
-	
+
+    // DTO → Entidade
+    public static List<LivroReserva> toEntityLivroReserva(ReservaDTO dto) {
+      if (dto == null) return null;
+
+        Reserva reserva = toEntity(dto);
+
+        // Relacionamentos — precisam ser resolvidos via repositório no service
+        // reserva.setCliente(...)
+        // reserva.setLivros(...)
+        
+        List<LivroReserva> livrosReserva = new ArrayList<>();
+        for(LivroDTO livroDTO : dto.getLivros()) {
+        	
+        	LivroReserva livroReserva = new LivroReserva();
+            livroReserva.setDataFinal(
+            		dto.getDataFinal() != null
+                    ? formatStringtoLocalDate(dto.getDataFinal())
+                    : null);
+            livroReserva.setLivro(toEntity(livroDTO));
+            livroReserva.setReserva(reserva);
+            
+            livrosReserva.add(livroReserva);
+        }
+           
+        return livrosReserva;
+    }
+
       // Entidade → DTO
       public static ClienteDTO toDTO(Cliente cliente) {
             if (cliente == null) return null;
@@ -343,10 +408,10 @@ public class Util {
             }
 
             VendaDTO dto = new VendaDTO();
-            dto.setId(venda.getId());
+            dto.setId(livroVenda.getId());
             dto.setValor(venda.getValor());
             dto.setData(venda.getData());
-            dto.setCliente(venda.getCliente());
+            dto.setCliente(Util.toDTO(venda.getCliente()));
             dto.setCopia(venda.getCopia());
             dto.setEmprestimo(venda.getEmprestimo());
             dto.setIdAluno(venda.getIdAluno());
@@ -368,7 +433,7 @@ public class Util {
             venda.setId(dto.getId());
             venda.setValor(dto.getValor());
             venda.setData(dto.getData());
-            venda.setCliente(dto.getCliente());
+            venda.setCliente(Util.toEntity(dto.getCliente()));
             venda.setCopia(dto.getCopia());
             venda.setEmprestimo(dto.getEmprestimo());
             venda.setIdAluno(dto.getIdAluno());
@@ -378,4 +443,106 @@ public class Util {
             // pois não têm campo correspondente na entidade Venda
             return venda;
         }
+        
+        // Entity -> DTO (junta Pagamento + Penalizacao em um único DTO)
+        public static PenalizacaoDTO toDTO(Pagamento pagamento, Penalizacao penalizacao) {
+            PenalizacaoDTO dto = new PenalizacaoDTO();
+     
+            if(pagamento != null) {
+            	
+	            dto.setIdPagamento(pagamento.getId());
+	            dto.setValor(pagamento.getValor());
+	            dto.setDataVencimento(pagamento.getDataVencimento());
+	            dto.setDataPagamento(pagamento.getDataPagamento());
+	            dto.setObservacaoPagamento(pagamento.getObservacao());
+	            dto.setIdAluno(pagamento.getIdAluno());
+	            dto.setIdFuncionario(pagamento.getIdFuncionario());
+	            dto.setIdEscola(pagamento.getIdEscola());
+	            dto.setIdLivroVenda(pagamento.getLivroVenda() != null ? pagamento.getLivroVenda().getId() : null);
+	            
+	            if(pagamento.getLivros() != null) {
+		            for(Livro livro : pagamento.getLivros()) {
+		            	
+		            	dto.getLivrosDTO().add(formatarLivroParaLivroDTO(livro, true));
+		            }
+	            }
+            }
+            
+            if(penalizacao != null) {
+	            
+            	dto.setIdPenalizacao(penalizacao.getId());
+	            dto.setDataInicial(penalizacao.getDataInicial());
+	            dto.setDataFinal(penalizacao.getDataFinal());
+	            dto.setObservacaoPenalizacao(penalizacao.getObservacao());
+	            
+	            if(pagamento == null) {
+	            	
+	            	dto.setIdFuncionario(penalizacao.getIdFuncionario());
+		            dto.setIdEscola(penalizacao.getIdEscola());
+		            dto.setIdLivroVenda(penalizacao.getLivroVenda() != null ? penalizacao.getLivroVenda().getId() : null);
+		            
+		            if(penalizacao.getLivros() != null) {
+			            for(Livro livro : penalizacao.getLivros()) {
+			            	
+			            	dto.getLivrosDTO().add(formatarLivroParaLivroDTO(livro, true));
+			            }
+		            }
+	            }
+            }
+     
+            return dto;
+        }
+     
+        // DTO -> Pagamento
+        public static Pagamento toPagamento(PenalizacaoDTO dto) {
+            Pagamento pagamento = new Pagamento();
+            
+            if(dto.getIdPagamento() != null
+            	&& dto.getIdPagamento() >= 0) {
+            	
+            	pagamento.setId(dto.getIdPagamento());
+            }
+            pagamento.setValor(dto.getValor());
+            pagamento.setDataVencimento(dto.getDataVencimento());
+            pagamento.setDataPagamento(dto.getDataPagamento());
+            pagamento.setObservacao(dto.getObservacaoPagamento());
+            pagamento.setIdAluno(dto.getIdAluno());
+            pagamento.setIdFuncionario(dto.getIdFuncionario());
+            pagamento.setIdEscola(dto.getIdEscola());
+     
+            if (dto.getIdLivroVenda() != null) {
+                LivroVenda livroVenda = new LivroVenda();
+                livroVenda.setId(dto.getIdLivroVenda());
+                pagamento.setLivroVenda(livroVenda);
+            }
+     
+            return pagamento;
+        }
+     
+        // DTO -> Penalizacao
+        public static Penalizacao toPenalizacao(PenalizacaoDTO dto) {
+            Penalizacao penalizacao = new Penalizacao();
+     
+            if(dto.getIdPenalizacao()!= null
+            	&& dto.getIdPenalizacao() >= 0) {
+            	
+            	penalizacao.setId(dto.getIdPenalizacao());
+            }
+            	
+            penalizacao.setDataInicial(dto.getDataInicial());
+            penalizacao.setDataFinal(dto.getDataFinal());
+            penalizacao.setObservacao(dto.getObservacaoPenalizacao());
+            penalizacao.setIdAluno(dto.getIdAluno());
+            penalizacao.setIdFuncionario(dto.getIdFuncionario());
+            penalizacao.setIdEscola(dto.getIdEscola());
+     
+            if (dto.getIdLivroVenda() != null) {
+                LivroVenda livroVenda = new LivroVenda();
+                livroVenda.setId(dto.getIdLivroVenda());
+                penalizacao.setLivroVenda(livroVenda);
+            }
+     
+            return penalizacao;
+        }
+        
 }

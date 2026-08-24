@@ -4,6 +4,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
 
+import br.com.biblioteca.domain.Categoria;
+import br.com.biblioteca.service.CategoriaService;
+
 @SpringBootApplication(scanBasePackages = "br.com.biblioteca")
 //@EntityScan("br.com.biblioteca.domain")  // ⬅️ Escanear entidades
 //@EnableJpaRepositories("br.com.biblioteca.repository")
