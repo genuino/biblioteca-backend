@@ -3,6 +3,7 @@ package br.com.biblioteca;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
+import br.com.biblioteca.domain.Categoria;
 
 @SpringBootApplication(scanBasePackages = "br.com.biblioteca")
 //@EntityScan("br.com.biblioteca.domain")  // ⬅️ Escanear entidades
