@@ -16,7 +16,7 @@ public class BibliotecaApplication {
 		
 		ApplicationContext context = SpringApplication.run(BibliotecaApplication.class, args);
 		
-		/*CategoriaService categoriaService = context.getBean(CategoriaService.class);
+		CategoriaService categoriaService = context.getBean(CategoriaService.class);
 			
 		Categoria categoria = new Categoria();
 		categoria.setCategoria("Ficção");
@@ -134,7 +134,7 @@ public class BibliotecaApplication {
 		categoria = new Categoria();
 		categoria.setCategoria("Outros");
 		
-		categoriaService.salvar(categoria);*/
+		categoriaService.salvar(categoria);
 		
 	}
 
